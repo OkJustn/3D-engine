@@ -153,10 +153,63 @@ function normalizeMesh(input_mesh) {
     return input_mesh; 
 }
 
+function getTriangleNormal(triangle) {
+    
+    // Local coordinates
+    const l1_x = triangle.v2.x - triangle.v1.x
+    const l1_y = triangle.v2.y - triangle.v1.y
+    const l1_z = triangle.v2.z - triangle.v1.z
+    
+    const l2_x = triangle.v3.x - triangle.v1.x
+    const l2_y = triangle.v3.y - triangle.v1.y
+    const l2_z = triangle.v3.z - triangle.v1.z
+        
+    // Cross product
+    const normal_x = l1_y * l2_z - l1_z * l2_y
+    const normal_y = l1_z * l2_x - l1_x * l2_z
+    const normal_z = l1_x * l2_y - l1_y * l2_x
+
+    const length = Math.sqrt(normal_x * normal_x + normal_y * normal_y + normal_z * normal_z); 
+
+    // normalizes the normal coordinates with length
+    const normal = new Vector3D(normal_x/length, normal_y/length, normal_z/length);
+    return normal;
+    
+}
+
+
+
+function projectMesh(input_mesh, matrix) {
+    const output_mesh = new Mesh();
+    for (const triangle of input_mesh.triangle_list) {
+        const normal = getTriangleNormal(triangle)
+        let output_v1 = 0;
+        let output_v2 = 0;
+        let output_v3 = 0;
+
+        if (
+            normal.x * (triangle.v1.x - 0.0) +
+            normal.y * (triangle.v1.y - 0.0) +
+            normal.z * (triangle.v1.z - 0.0) < 0
+        ) {
+            output_v1 = matrixMultiply(matrix, triangle.v1)
+            output_v2 = matrixMultiply(matrix, triangle.v2)
+            output_v3 = matrixMultiply(matrix, triangle.v3)
+            
+            output_mesh.triangle_list.push(new Triangle(output_v1, output_v2, output_v3))
+        }
+        
+        
+    }
+    return output_mesh;
+}
+
 function loop() {
     clearScreen();
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
+
+
 
     zRotation_matrix.matrix = [
     [Math.cos(toRadians(theta)), Math.sin(toRadians(theta)), 0.0, 0.0],
@@ -177,7 +230,7 @@ function loop() {
     const Zrotated_cube = transformMesh(cube, zRotation_matrix);
     const ZXrotated_cube = transformMesh(Zrotated_cube, xRotation_matrix);
     const zOffset_cube = transformMesh(ZXrotated_cube, zOffset_matrix);
-    const projected_cube = transformMesh(zOffset_cube, projection_matrix);
+    const projected_cube = projectMesh(zOffset_cube, projection_matrix);
     normalizeMesh(projected_cube);
     drawMesh(projected_cube);
 

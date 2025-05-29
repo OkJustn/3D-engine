@@ -125,17 +125,42 @@ function transformMesh(input_mesh, matrix) {
     return output_mesh;
 }
 
+function drawTriangle(triangle, r, g, b) {
+    
+    context.beginPath();
+    context.moveTo(triangle.v1.x, triangle.v1.y);
+    context.lineTo(triangle.v2.x, triangle.v2.y);
+    context.lineTo(triangle.v3.x, triangle.v3.y);
+    context.closePath();
+
+    context.fillStyle = `rgb(${r}, ${g}, ${b})`;
+    context.fill();
+    
+}
+
+const light = new Vector3D(1, 1, -1);
+const camera = new Vector3D(0, 0, 0);
+
 function drawMesh(input_mesh) {
     for (const triangle of input_mesh.triangle_list) {
-        context.beginPath();
-        context.moveTo(triangle.v1.x, triangle.v1.y);
-        context.lineTo(triangle.v2.x, triangle.v2.y);
-        context.lineTo(triangle.v3.x, triangle.v3.y);
-        context.closePath();
+        const normal = getTriangleNormal(triangle);
+        const normal_length = Math.sqrt(
+            normal.x * normal.x + normal.y * normal.y + normal.z * normal.z
+        );
 
-        // Add stroke color here (random color example)
-        context.strokeStyle = 'white';
-        context.stroke();
+        normalized_normal = new Vector3D(
+            normal.x/normal_length, normal.y/normal_length, normal.z/normal_length
+        )
+
+        const dot_product = normalized_normal.x * (triangle.v1.x - light.x) +
+                            normalized_normal.y * (triangle.v1.y - light.y) +
+                            normalized_normal.z * (triangle.v1.z - light.z);
+
+        const brightness = Math.max(0.3, dot_product);
+
+        const triangle_shade = brightness * 100;
+
+        drawTriangle(triangle, triangle_shade, triangle_shade, triangle_shade);
     }
 }
 
@@ -188,9 +213,9 @@ function projectMesh(input_mesh, matrix) {
         let output_v3 = 0;
 
         if (
-            normal.x * (triangle.v1.x - 0.0) +
-            normal.y * (triangle.v1.y - 0.0) +
-            normal.z * (triangle.v1.z - 0.0) < 0
+            normal.x * (triangle.v1.x - camera.x) +
+            normal.y * (triangle.v1.y - camera.y) +
+            normal.z * (triangle.v1.z - camera.z) < 0
         ) {
             output_v1 = matrixMultiply(matrix, triangle.v1)
             output_v2 = matrixMultiply(matrix, triangle.v2)
@@ -225,7 +250,9 @@ function loop() {
         [0.0, 0.0, 0.0, .0]
     ]
 
-    theta++;
+    theta+= 0.5 ;
+
+    
 
     const Zrotated_cube = transformMesh(cube, zRotation_matrix);
     const ZXrotated_cube = transformMesh(Zrotated_cube, xRotation_matrix);

@@ -207,7 +207,7 @@ function loadObj(filename) {
 const mesh_list = [];
 
 let cube = null;
-loadObj("cube.obj").then(loadedMesh => {
+loadObj("./cube.obj").then(loadedMesh => {
     cube = loadedMesh;
     mesh_list.push(cube);
 });
